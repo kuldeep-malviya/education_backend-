@@ -28,18 +28,30 @@ import { errorHandler, notFound } from './middleware/error.js';
 
 const app = express();
 
+const normalizeOrigin = (value) => value?.trim().replace(/\/+$/, '');
+
 const allowedOrigins = [
-  process.env.CLIENT_URL || 'http://localhost:5173',
-  process.env.ADMIN_URL || 'http://localhost:5174',
-];
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'https://education-khaki-xi.vercel.app',
+  process.env.CLIENT_URL,
+  process.env.ADMIN_URL,
+  ...(process.env.CORS_ALLOWED_ORIGINS || '').split(','),
+]
+  .map(normalizeOrigin)
+  .filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, cb) => {
-      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+      const normalizedOrigin = normalizeOrigin(origin);
+      if (!normalizedOrigin || allowedOrigins.includes(normalizedOrigin)) {
+        return cb(null, true);
+      }
       return cb(new Error(`CORS blocked: ${origin}`));
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   })
 );
 
